@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 ndarray = "0.15.6"
+ndarray-ndimage = "0.4.0"
