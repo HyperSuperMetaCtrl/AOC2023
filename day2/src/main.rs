@@ -26,7 +26,7 @@ impl TryFrom<&str> for Color {
             "red" => Ok(Self::Red),
             "green" => Ok(Self::Green),
             "blue" => Ok(Self::Blue),
-            _ => Err("no color parsed"),
+            _ => Err("Could not convert &str to Color"),
         }
     }
 }
@@ -59,6 +59,20 @@ impl Round {
             false
         }
     }
+    fn assign_if_larger(&mut self, round: &Round) {
+        if self.red < round.red {
+            self.red = round.red
+        }
+        if self.green < round.green {
+            self.green = round.green
+        }
+        if self.blue < round.blue {
+            self.blue = round.blue
+        }
+    }
+    fn cube(&self) -> u32 {
+       self.red * self.green * self.blue
+    }
 }
 
 fn parse_color(input: &str) -> IResult<&str, Color> {
@@ -83,9 +97,7 @@ fn parse_game_id(input: &str) -> IResult<&str, u32> {
     Ok((input, game_id))
 }
 
-fn main() -> Result<()> {
-    let input = read_to_string("input.txt")?;
-    let mut input = input.as_str();
+fn part1(mut input: &str) {
     let mut sum = 0;
     loop {
         let Ok((input1, game_id)) = parse_game_id(&input) else {
@@ -104,6 +116,29 @@ fn main() -> Result<()> {
         }
     }
     println!("Day 2 Part 1: {sum}");
+}
+
+fn part2(mut input: &str) {
+    let mut sum = 0;
+    loop {
+        let mut min_cubes = Round::new();
+        let Ok((input1, _)) = parse_game_id(&input) else {
+            break;
+        };
+        input = input1;
+        while let Ok((input1, round)) = parse_round(input) {
+            min_cubes.assign_if_larger(&round);
+            input = input1
+        }
+        sum += min_cubes.cube();
+    }
+    println!("Day 2 Part 2: {sum}");
+}
+
+fn main() -> Result<()> {
+    let input = read_to_string("input.txt")?;
+    part1(&input);
+    part2(&input);
 
     Ok(())
 }
