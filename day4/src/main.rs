@@ -3,36 +3,33 @@ use nom::{bytes::complete::*, character::complete::*, multi::*, sequence::*, IRe
 use std::fs::read_to_string;
 
 #[derive(Debug)]
-struct Round {
+struct Card {
     winning_numbers: Vec<u32>,
     my_numbers: Vec<u32>,
 }
 
-impl From<(u32, Vec<u32>, Vec<u32>)> for Round {
-    fn from(tuple: (u32, Vec<u32>, Vec<u32>)) -> Self {
+impl From<(Vec<u32>, Vec<u32>)> for Card {
+    fn from(tuple: (Vec<u32>, Vec<u32>)) -> Self {
         Self {
-            winning_numbers: tuple.1,
-            my_numbers: tuple.2,
+            winning_numbers: tuple.0,
+            my_numbers: tuple.1,
         }
     }
 }
 
-impl Round {
-    fn score(self) -> u32 {
-        let num_winning: u32 = self
-            .winning_numbers
-            .into_iter()
-            .fold(0u32, |acc, w| {
-                if self.my_numbers.contains(&w) {
-                    acc + 1
-                } else {
-                    acc
-                }
-            });
-        if num_winning > 0 {
+impl Card {
+    fn score(&self, double: bool) -> u32 {
+        let num_winning: u32 = self.winning_numbers.iter().fold(0u32, |acc, w| {
+            if self.my_numbers.contains(&w) {
+                acc + 1
+            } else {
+                acc
+            }
+        });
+        if num_winning > 0 && double {
             1 << (num_winning - 1)
         } else {
-            0
+            num_winning
         }
     }
 }
@@ -61,20 +58,39 @@ fn parse_numbers(input: &str) -> IResult<&str, Vec<u32>> {
     Ok((input, numbers))
 }
 
-fn parse_round(input: &str) -> IResult<&str, Round> {
-    let (input, parsed) = tuple((parse_card, parse_winning_numbers, parse_numbers))(input)?;
-    Ok((input, Round::from(parsed)))
+fn parse_round(input: &str) -> IResult<&str, Card> {
+    let (input, parsed) = preceded(parse_card, tuple((parse_winning_numbers, parse_numbers)))(input)?;
+    Ok((input, Card::from(parsed)))
 }
 
-fn main() -> Result<()> {
-    let input = read_to_string("input.txt")?;
-    let mut input = input.as_str();
+fn part1(mut input: &str) {
     let mut sum = 0;
     while let Ok((input1, round)) = parse_round(input) {
-        sum += round.score();
+        sum += round.score(true);
         input = input1;
     }
     println!("Day 4 Part 1: {sum}");
+}
 
+fn part2(mut input: &str) {
+    let mut all_cards: Vec<Card> = vec![];
+    while let Ok((input1, card)) = parse_round(input) {
+        all_cards.push(card);
+        input = input1;
+    }
+    let mut card_counts = vec![1; all_cards.len()];
+    for (index, card) in all_cards.iter().enumerate() {
+        let score = card.score(false);
+            for i in index + 1..=index + score as usize {
+                card_counts[i] += card_counts[index];
+            }
+    }
+    println!("Day 4 Part 2: {}", card_counts.iter().sum::<u32>());
+}
+
+fn main() -> Result<()> {
+    let mut input = read_to_string("input.txt")?;
+    part1(input.clone().as_mut_str());
+    part2(input.as_mut_str());
     Ok(())
 }
