@@ -30,7 +30,7 @@ impl Race {
         }
         let smallest = smallest.unwrap();
         let biggest = biggest.unwrap();
-        biggest-smallest+1
+        biggest - smallest + 1
     }
 }
 
