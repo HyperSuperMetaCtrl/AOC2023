@@ -66,7 +66,7 @@ impl Almanac {
         input
     }
     fn transform_slice(&self, input: &mut [u64]) {
-        input.iter_mut().for_each(|e| *e = self.transform(*e));
+        input.par_iter_mut().for_each(|e| *e = self.transform(*e));
     }
 }
 
@@ -98,32 +98,34 @@ fn main() -> Result<()> {
     let smallest = transformed.iter().min().unwrap();
     println!("Day 5 Part 1: {smallest}");
 
-    let mut global_min: Arc<Mutex<Option<u64>>> = Arc::new(Mutex::new(None));
-    let chunked_seeds: Vec<&[u64]> = almanac.seeds.par_chunks(2).collect();
-    chunked_seeds.par_iter().for_each(|seeds| {
-        let mut range: Vec<u64> = (seeds[0]..(seeds[0] + seeds[1])).collect();
-        println!("transforming slice");
-        almanac.transform_slice(&mut range);
-        if let Some(min) = range.par_iter().min() {
-            let global_min = global_min.clone();
-            let mut global_min = global_min.lock().unwrap();
-            if  global_min.is_none() || min < &global_min.unwrap() {
-                println!("found min");
-                *global_min = Some(*min);
-            }
-        }
-    });
-    // for seeds in almanac.seeds.chunks(2) {
+    // let mut global_min: Arc<Mutex<Option<u64>>> = Arc::new(Mutex::new(None));
+    // let chunked_seeds: Vec<&[u64]> = almanac.seeds.par_chunks(2).collect();
+    // chunked_seeds.par_iter().for_each(|seeds| {
     //     let mut range: Vec<u64> = (seeds[0]..(seeds[0] + seeds[1])).collect();
-    //     dbg!(range.len());
+    //     println!("transforming slice");
     //     almanac.transform_slice(&mut range);
     //     if let Some(min) = range.par_iter().min() {
+    //         let global_min = global_min.clone();
+    //         let mut global_min = global_min.lock().unwrap();
     //         if  global_min.is_none() || min < &global_min.unwrap() {
-    //             global_min = Some(*min);
+    //             println!("found min");
+    //             *global_min = Some(*min);
     //         }
     //     }
-    // }
-    println!("Day 5 Part 2: {}", global_min.lock().unwrap().unwrap());
+    // });
+    // println!("Day 5 Part 2: {}", global_min.lock().unwrap().unwrap());
+    let mut global_min: Option<u64> = None;
+    for seeds in almanac.seeds.chunks(2) {
+        let mut range: Vec<u64> = (seeds[0]..(seeds[0] + seeds[1])).collect();
+        dbg!(range.len());
+        almanac.transform_slice(&mut range);
+        if let Some(min) = range.par_iter().min() {
+            if  global_min.is_none() || min < &global_min.unwrap() {
+                global_min = Some(*min);
+            }
+        }
+    }
+    println!("Day 5 Part 2: {}", global_min.unwrap());
 
     Ok(())
 }
