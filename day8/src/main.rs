@@ -1,8 +1,11 @@
+use rayon::iter::ParallelBridge;
+use rayon::prelude::*;
 use std::{collections::HashMap, fs::read_to_string, iter::Cycle, str::Chars};
 
 use nom::{
     bytes::complete::{tag, take_while},
-    IResult, multi::many0,
+    multi::many0,
+    IResult,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -24,12 +27,27 @@ enum Direction {
     R,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Directions<'a>(&'a str);
 
 struct DirectionsIntoIter<'a>(Cycle<Chars<'a>>);
 
+impl<'a> Directions<'a> {
+    fn iter(&self) -> DirectionsIntoIter<'_> {
+        self.into_iter()
+    }
+}
 impl<'a> IntoIterator for Directions<'a> {
+    type Item = Direction;
+
+    type IntoIter = DirectionsIntoIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        DirectionsIntoIter(self.0.chars().cycle())
+    }
+}
+
+impl<'a> IntoIterator for &Directions<'a> {
     type Item = Direction;
 
     type IntoIter = DirectionsIntoIter<'a>;
@@ -76,14 +94,17 @@ fn main() {
     let input = read_to_string("input.txt").unwrap();
     let input = input.split("\n\n").collect::<Vec<_>>();
     let directions = Directions::from(input[0]);
+    let directions_part2 = directions.clone();
     assert_eq!(input.len(), 2);
     let mut graph: HashMap<Tag, Node> = HashMap::new();
     let (input, nodes) = many0(parse_node)(input[1]).unwrap();
     assert_eq!(input, "");
-    nodes.iter().for_each(|x| {graph.insert(x.0, x.1);});
+    nodes.iter().for_each(|x| {
+        graph.insert(x.0, x.1);
+    });
     let mut position = Tag("AAA");
     let mut steps = 0;
-    for direction in directions {
+    for direction in &directions {
         if position == Tag("ZZZ") {
             break;
         }
@@ -95,4 +116,32 @@ fn main() {
         steps += 1;
     }
     println!("Day 8 Part 1: {steps}");
+    // let mut positions: Vec<Tag> = graph
+    //     .keys()
+    //     .into_iter()
+    //     .cloned()
+    //     .filter(|x| x.0.chars().last().unwrap() == 'A')
+    //     .collect();
+    // dbg!(positions.len());
+    // let mut flags = vec![false; positions.len()];
+    // steps = 0;
+    // for direction in &directions_part2 {
+    //     for (index, position) in positions.iter_mut().enumerate() {
+    //         if position.0.chars().last().unwrap() == 'Z' {
+    //             flags[index] = true;
+    //         }
+    //         let node = graph.get(&position).unwrap();
+    //         *position = match direction {
+    //             Direction::L => node.left(),
+    //             Direction::R => node.right(),
+    //         };
+    //     }
+    //     if flags.iter().all(|x| *x == true) {
+    //         break;
+    //     }
+    //     steps += 1;
+    //     flags.iter_mut().for_each(|x| *x = false);
+    // }
+
+    // println!("Day 8 Part 2: {steps}");
 }
