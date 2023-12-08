@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::read_to_string, iter::Cycle, str::Chars};
 
 use nom::{
     bytes::complete::{tag, take_while},
-    IResult,
+    IResult, multi::many0,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -74,14 +74,13 @@ fn parse_node(input: &str) -> IResult<&str, (Tag, Node)> {
 
 fn main() {
     let input = read_to_string("input.txt").unwrap();
-    let mut input = input.split("\n\n").collect::<Vec<_>>();
+    let input = input.split("\n\n").collect::<Vec<_>>();
     let directions = Directions::from(input[0]);
     assert_eq!(input.len(), 2);
     let mut graph: HashMap<Tag, Node> = HashMap::new();
-    while let Ok((input1, node)) = parse_node(input[1]) {
-        graph.insert(node.0, node.1);
-        input[1] = input1;
-    }
+    let (input, nodes) = many0(parse_node)(input[1]).unwrap();
+    assert_eq!(input, "");
+    nodes.iter().for_each(|x| {graph.insert(x.0, x.1);});
     let mut position = Tag("AAA");
     let mut steps = 0;
     for direction in directions {
