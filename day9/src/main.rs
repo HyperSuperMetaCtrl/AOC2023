@@ -16,7 +16,7 @@ fn read_input() -> Vec<Vec<i32>> {
 }
 
 fn diffs(nums: &[i32]) -> Vec<i32> {
-    let mut diffs = vec![];
+    let mut diffs = Vec::with_capacity(nums.len()-1);
     for n in nums.windows(2) {
         let diff = n[1] - n[0];
         diffs.push(diff);
